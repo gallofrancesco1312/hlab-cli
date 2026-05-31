@@ -1,0 +1,14 @@
+bin/
+*.exe
+*.test
+*.out
+
+# Certificati e chiavi private — non vanno mai in git
+*.key
+*.crt
+*.pem
+
+# File generati da IDE
+.DS_Store
+.idea/
+.vscode/
