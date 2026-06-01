@@ -2,14 +2,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
+
+	"github.com/gallofrancesco1312/hlab-cli/internal/agent"
 )
 
-var version = "dev"
-
 func main() {
-	// TODO Phase 2: initialize agent configuration, start HTTP server and beacon.
-	fmt.Fprintf(os.Stderr, "hlab-agent %s — not yet implemented (Phase 2)\n", version)
-	os.Exit(1)
+	agent.NewServer(os.Args[1]).Start()
 }
