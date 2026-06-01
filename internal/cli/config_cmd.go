@@ -13,7 +13,7 @@ import (
 func newConfigCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "config",
-		Short: "Mostra la configurazione corrente della CLI",
+		Short: "Show the current CLI configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := loadConfig()
 
@@ -21,10 +21,10 @@ func newConfigCommand() *cobra.Command {
 				return json.NewEncoder(os.Stdout).Encode(cfg)
 			}
 
-			// yaml.Marshal produce output YAML leggibile — comodo per debug.
+			// yaml.Marshal produces readable output — handy for debugging.
 			data, err := yaml.Marshal(cfg)
 			if err != nil {
-				return fmt.Errorf("serializzazione config: %w", err)
+				return fmt.Errorf("serializing config: %w", err)
 			}
 			fmt.Print(string(data))
 			return nil

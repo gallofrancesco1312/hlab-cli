@@ -1,4 +1,4 @@
-// Package main è il punto di ingresso del daemon hlab-agent (lato server).
+// Package main is the entry point for the hlab-agent daemon (server side).
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 var version = "dev"
 
 func main() {
-	// TODO Fase 2: inizializzare configurazione agente, avviare HTTP server e beacon.
-	fmt.Fprintf(os.Stderr, "hlab-agent %s — non ancora implementato (Fase 2)\n", version)
+	// TODO Phase 2: initialize agent configuration, start HTTP server and beacon.
+	fmt.Fprintf(os.Stderr, "hlab-agent %s — not yet implemented (Phase 2)\n", version)
 	os.Exit(1)
 }

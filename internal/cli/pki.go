@@ -9,7 +9,7 @@ import (
 func newPKICommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pki",
-		Short: "Gestione certificati mTLS",
+		Short: "Manage mTLS certificates",
 	}
 
 	cmd.AddCommand(newPKIInitCommand(), newPKIStatusCommand())
@@ -19,14 +19,14 @@ func newPKICommand() *cobra.Command {
 func newPKIInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
-		Short: "Genera CA, certificato client e certificato server",
-		Long: `Crea una CA self-signed e i certificati necessari per mTLS:
-  ~/.hlab/ca.crt      — CA pubblica
-  ~/.hlab/client.crt  — certificato client
-  ~/.hlab/client.key  — chiave privata client`,
+		Short: "Generate CA, client certificate, and server certificate",
+		Long: `Creates a self-signed CA and the certificates required for mTLS:
+  ~/.hlab/ca.crt      — public CA
+  ~/.hlab/client.crt  — client certificate
+  ~/.hlab/client.key  — client private key`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO Fase 6: implementare generazione PKI reale.
-			fmt.Println("pki init: non ancora implementato (Fase 6)")
+			// TODO Phase 6: implement real PKI generation.
+			fmt.Println("pki init: not yet implemented (Phase 6)")
 			return nil
 		},
 	}
@@ -35,10 +35,10 @@ func newPKIInitCommand() *cobra.Command {
 func newPKIStatusCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "status",
-		Short: "Mostra scadenze dei certificati",
+		Short: "Show certificate expiry dates",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO Fase 6: leggere i cert e mostrare NotBefore/NotAfter.
-			fmt.Println("pki status: non ancora implementato (Fase 6)")
+			// TODO Phase 6: read certs and show NotBefore/NotAfter.
+			fmt.Println("pki status: not yet implemented (Phase 6)")
 			return nil
 		},
 	}

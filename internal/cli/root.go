@@ -1,6 +1,6 @@
-// Package cli definisce tutti i comandi della CLI usando cobra.
-// Cobra organizza i comandi in un albero: ogni comando può avere sottocomandi,
-// flag globali e flag locali.
+// Package cli defines all CLI commands using cobra.
+// Cobra organizes commands in a tree: each command can have subcommands,
+// global flags, and local flags.
 package cli
 
 import (
@@ -12,8 +12,8 @@ import (
 	"github.com/gallofrancesco1312/hlab-cli/internal/config"
 )
 
-// outputFormat è il tipo per il flag --output.
-// Usare un tipo custom (invece di string) permette di validare i valori accettati.
+// outputFormat is the type for the --output flag.
+// Using a custom type (instead of string) allows validating accepted values.
 type outputFormat string
 
 const (
@@ -21,48 +21,47 @@ const (
 	outputJSON  outputFormat = "json"
 )
 
-// rootFlags raccoglie i flag globali disponibili su tutti i sottocomandi.
-// I flag globali vengono definiti sul root command con PersistentFlags().
+// rootFlags holds the global flags available on all subcommands.
+// Global flags are defined on the root command with PersistentFlags().
 type rootFlags struct {
 	output outputFormat
 }
 
 var globalFlags rootFlags
 
-// NewRootCommand costruisce e ritorna il comando radice.
-// In cobra, ogni comando è un *cobra.Command: una struct con Name, Short description,
-// Long description, e la funzione Run/RunE da eseguire.
+// NewRootCommand builds and returns the root command.
+// In cobra, every command is a *cobra.Command: a struct with Name, Short description,
+// Long description, and the Run/RunE function to execute.
 func NewRootCommand(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:   "hlab",
-		Short: "CLI per la gestione remota del tuo homelab",
-		Long: `hlab ti permette di scoprire, monitorare e controllare i servizi
-del tuo homelab da qualsiasi macchina sulla rete locale.
+		Short: "CLI for remote management of your homelab",
+		Long: `hlab lets you discover, monitor, and control services
+in your homelab from any machine on the local network.
 
-Esempi:
-  hlab discover              # scopre nodi sulla LAN
-  hlab nodes                 # lista nodi noti
-  hlab nas jellyfin stop     # ferma jellyfin sul nodo "nas"
-  hlab pki init              # genera certificati mTLS`,
+Examples:
+  hlab discover              # discover nodes on the LAN
+  hlab nodes                 # list known nodes
+  hlab nas jellyfin stop     # stop jellyfin on node "nas"
+  hlab pki init              # generate mTLS certificates`,
 
-		// SilenceUsage evita che cobra stampi l'usage completo ad ogni errore.
-		// Gli errori vengono già mostrati da cobra; l'usage è rumore.
+		// SilenceUsage prevents cobra from printing the full usage on every error.
+		// Errors are already shown by cobra; the usage is just noise.
 		SilenceUsage: true,
 
-		// Version fa sì che --version stampi la versione e esca.
+		// Version makes --version print the version and exit.
 		Version: version,
 	}
 
-	// PersistentFlags sono flag ereditati da tutti i sottocomandi.
-	// StringVarP lega il flag a una variabile: (destinazione, nome, shorthand, default, descrizione)
+	// PersistentFlags are flags inherited by all subcommands.
+	// StringVarP binds the flag to a variable: (destination, name, shorthand, default, description)
 	root.PersistentFlags().StringVarP(
 		(*string)(&globalFlags.output),
 		"output", "o",
 		string(outputHuman),
-		`formato output: "human" (default) o "json"`,
+		`output format: "human" (default) or "json"`,
 	)
 
-	// Aggiungo i sottocomandi al root. Ogni Add chiama AddCommand internamente.
 	root.AddCommand(
 		newDiscoverCommand(),
 		newNodesCommand(),
@@ -73,23 +72,23 @@ Esempi:
 	return root
 }
 
-// Execute è il punto di ingresso: chiama root.Execute() e gestisce l'uscita.
+// Execute is the entry point: calls root.Execute() and handles exit.
 func Execute(version string) {
 	root := NewRootCommand(version)
 	if err := root.Execute(); err != nil {
-		// cobra stampa già il messaggio di errore; qui usciamo con codice 1.
+		// cobra already prints the error message; here we exit with code 1.
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-// loadConfig è un helper condiviso tra i comandi per caricare la config.
-// Se il caricamento fallisce, stampa l'errore e termina — comportamento
-// corretto per una CLI dove la config è prerequisito.
+// loadConfig is a shared helper for commands to load the config.
+// If loading fails, it prints the error and terminates — correct behavior
+// for a CLI where config is a prerequisite.
 func loadConfig() config.Config {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "errore config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "config error: %v\n", err)
 		os.Exit(1)
 	}
 	return cfg

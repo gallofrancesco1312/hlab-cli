@@ -18,29 +18,29 @@ func newDiscoverCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "discover",
-		Short: "Scopre nodi hlab sulla LAN tramite multicast",
-		Long: `Ascolta il traffico multicast UDP per il tempo specificato
-e salva i nodi trovati nella cache locale (~/.hlab/nodes.json).`,
+		Short: "Discover hlab nodes on the LAN via multicast",
+		Long: `Listens for UDP multicast traffic for the specified duration
+and saves found nodes to the local cache (~/.hlab/nodes.json).`,
 
-		// RunE è la variante di Run che può ritornare un errore.
-		// Preferire RunE a Run perché cobra gestisce l'errore automaticamente
-		// (lo stampa e imposta il codice di uscita).
+		// RunE is the variant of Run that can return an error.
+		// Prefer RunE over Run because cobra handles the error automatically
+		// (prints it and sets the exit code).
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDiscover(timeout)
 		},
 	}
 
-	// Flag locale: disponibile solo su questo comando, non sui sottocomandi.
-	cmd.Flags().DurationVar(&timeout, "timeout", 3*time.Second, "durata ascolto multicast")
+	// Local flag: available only on this command, not on subcommands.
+	cmd.Flags().DurationVar(&timeout, "timeout", 3*time.Second, "multicast listen duration")
 
 	return cmd
 }
 
 func runDiscover(timeout time.Duration) error {
-	fmt.Fprintf(os.Stderr, "Ascolto beacon multicast per %s...\n", timeout)
+	fmt.Fprintf(os.Stderr, "Listening for multicast beacons for %s...\n", timeout)
 
-	// TODO Fase 4: chiamare il listener multicast reale.
-	// Per ora simuliamo con un nodo di esempio per testare l'output.
+	// TODO Phase 4: call the real multicast listener.
+	// For now we simulate with a sample node to test the output.
 	found := []hlabapi.NodeEntry{
 		{
 			Node:     "homelab-nas",
@@ -52,16 +52,16 @@ func runDiscover(timeout time.Duration) error {
 		},
 	}
 
-	// Aggiorno la cache su disco prima di stampare.
+	// Update the on-disk cache before printing.
 	existing, err := config.LoadNodes()
 	if err != nil {
-		return fmt.Errorf("caricamento cache nodi: %w", err)
+		return fmt.Errorf("loading node cache: %w", err)
 	}
 	for _, n := range found {
 		existing = config.UpsertNode(existing, n)
 	}
 	if err := config.SaveNodes(existing); err != nil {
-		return fmt.Errorf("salvataggio cache nodi: %w", err)
+		return fmt.Errorf("saving node cache: %w", err)
 	}
 
 	return printNodes(found, globalFlags.output)
@@ -72,13 +72,13 @@ func newNodesCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "nodes",
-		Short: "Lista i nodi noti nella cache locale",
+		Short: "List known nodes from the local cache",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runNodes(refresh)
 		},
 	}
 
-	cmd.Flags().BoolVar(&refresh, "refresh", false, "forza re-discovery prima di listare")
+	cmd.Flags().BoolVar(&refresh, "refresh", false, "force re-discovery before listing")
 
 	return cmd
 }
@@ -94,7 +94,7 @@ func runNodes(refresh bool) error {
 
 	nodes, err := config.LoadNodes()
 	if err != nil {
-		return fmt.Errorf("caricamento nodi: %w", err)
+		return fmt.Errorf("loading nodes: %w", err)
 	}
 
 	nodes = config.MarkStale(nodes, cfg.StaleAfter)
@@ -102,21 +102,21 @@ func runNodes(refresh bool) error {
 	return printNodes(nodes, globalFlags.output)
 }
 
-// printNodes stampa i nodi nel formato richiesto.
-// Separare la logica di output dalla logica di business è buona pratica:
-// rende facile aggiungere nuovi formati (json, csv) senza toccare la logica.
+// printNodes prints nodes in the requested format.
+// Separating output logic from business logic is good practice:
+// it makes it easy to add new formats (json, csv) without touching the logic.
 func printNodes(nodes []hlabapi.NodeEntry, format outputFormat) error {
 	if format == outputJSON {
 		return json.NewEncoder(os.Stdout).Encode(nodes)
 	}
 
 	if len(nodes) == 0 {
-		fmt.Println("Nessun nodo trovato. Prova: hlab discover")
+		fmt.Println("No nodes found. Try: hlab discover")
 		return nil
 	}
 
-	// tabwriter allinea le colonne automaticamente.
-	// I parametri sono: output, minwidth, tabwidth, padding, padchar, flags.
+	// tabwriter aligns columns automatically.
+	// Parameters: output, minwidth, tabwidth, padding, padchar, flags.
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "NODE\tADDR\tPORT\tVERSION\tLAST SEEN\tSTALE")
 	fmt.Fprintln(w, "----\t----\t----\t-------\t---------\t-----")

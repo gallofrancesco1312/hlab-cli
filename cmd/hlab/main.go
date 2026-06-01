@@ -1,14 +1,14 @@
-// Package main è il punto di ingresso del binario hlab (CLI lato workstation).
+// Package main is the entry point for the hlab binary (workstation-side CLI).
 //
-// In Go ogni eseguibile ha esattamente un package main con una funzione main().
-// Il package main non può essere importato da altri package.
+// In Go every executable has exactly one package main with a main() function.
+// Package main cannot be imported by other packages.
 package main
 
 import "github.com/gallofrancesco1312/hlab-cli/internal/cli"
 
-// version viene iniettata al momento della compilazione tramite ldflags.
-// Il Makefile usa: -ldflags="-X main.version=$(git describe --tags)"
-// Questo pattern è standard per versioning senza hard-coding.
+// version is injected at build time via ldflags.
+// The Makefile uses: -ldflags="-X main.version=$(git describe --tags)"
+// This pattern is standard for versioning without hard-coding.
 var version = "dev"
 
 func main() {
