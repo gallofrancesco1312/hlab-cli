@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -24,12 +23,8 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	apiClient, err := client.New(client.FromEnv, client.WithUserAgent("hlab-agent/1.0.0"))
-	if err != nil {
-		panic(err)
-	}
-	defer apiClient.Close()
+	ctx := s.DockerClient.ctx
+	apiClient := s.DockerClient.client
 
 	w.Header().Set("Content-Type", "application/json")
 
