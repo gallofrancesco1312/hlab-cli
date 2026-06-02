@@ -4,10 +4,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
-	"github.com/gallofrancesco1312/hlab-cli/internal/config"
+	"github.com/gallofrancesco1312/hlab-cli/internal/agent_config"
 )
 
 type TLSConfig struct {
@@ -25,8 +26,10 @@ type Server struct {
 }
 
 func NewServer(configFile string) *Server {
-	cfg, err := config.AgentLoad()
+	slog.Info("Loading agent configuration...")
+	cfg, err := agent_config.AgentLoad(configFile)
 	if err != nil {
+		slog.Error("Failed to load agent configuration", "error", err)
 		panic(fmt.Sprintf("failed to load agent config: %v", err))
 	}
 	return &Server{
@@ -48,9 +51,11 @@ func (s *Server) registerRoutes() {
 }
 
 func (s *Server) Start() error {
+	slog.Info("Starting hlab-agent server...", "node_name", s.NodeName, "port", s.Port)
 	if s.TLS.CertFile == "" || s.TLS.KeyFile == "" {
 		return fmt.Errorf("TLS certificate and key files must be provided")
 	}
+	slog.Info("Registering HTTP routes...")
 	s.registerRoutes()
 	caCert, err := os.ReadFile(s.TLS.CAFile)
 	if err != nil {
@@ -70,5 +75,6 @@ func (s *Server) Start() error {
 		Handler:   s.Mux,
 		TLSConfig: tlsCfg,
 	}
+	slog.Info("Agent server is listening on port", "port", s.Port)
 	return server.ListenAndServeTLS(s.TLS.CertFile, s.TLS.KeyFile)
 }

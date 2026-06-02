@@ -1,6 +1,6 @@
-// Package config manages the CLI configuration (~/.hlab/config.yaml)
+// Package agent_config manages the agent configuration (~/.hlab/config.yaml)
 // and the discovered nodes cache (~/.hlab/nodes.json).
-package config
+package agent_config
 
 import (
 	"fmt"
@@ -43,15 +43,16 @@ func AgentDefaults(configFilename string) AgentConfig {
 
 // HlabDir returns the path to the ~/.hlab directory, creating it if it does not exist.
 func HlabAgentDir(configFilename string) string {
-	return filepath.Join("/etc/hlab", configFilename)
+	return filepath.Join(".", configFilename)
+	//return filepath.Join("/etc/hlab", configFilename)
 }
 
 // Load reads the configuration from disk. If the file does not exist it returns the defaults.
 // The signature `(Config, error)` is idiomatic Go: both the value and the error are returned.
-func AgentLoad() (AgentConfig, error) {
-	cfg := AgentDefaults("agent.yaml")
+func AgentLoad(configFilename string) (AgentConfig, error) {
+	cfg := AgentDefaults(configFilename)
 
-	path := configPath()
+	path := HlabAgentDir(configFilename)
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		// File does not exist yet: that's fine, use the defaults.

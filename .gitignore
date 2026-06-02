@@ -12,3 +12,6 @@ bin/
 .DS_Store
 .idea/
 .vscode/
+
+/agent.yaml
+certs/

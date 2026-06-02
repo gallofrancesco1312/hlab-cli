@@ -1,0 +1,27 @@
+node_name: potato-server
+port: 8444
+tls:
+  ca_cert:     certs/ca.crt
+  server_cert: certs/server.crt
+  server_key:  certs/server.key
+
+beacon:
+  enabled:  true
+  interval: 10s
+  multicast_addr: "239.255.42.42:9999"
+
+backends:
+  compose:
+    enabled: true
+    scan_dirs:
+      - /opt/stacks
+      - /home/user/compose
+  docker:
+    enabled: true
+    socket: /var/run/docker.sock
+  systemd:
+    enabled: true
+    unit_whitelist:
+      - sshd
+      - nginx
+      - postgresql
