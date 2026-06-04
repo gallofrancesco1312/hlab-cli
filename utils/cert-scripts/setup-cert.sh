@@ -13,19 +13,21 @@ fi
 mkdir -p "$CERT_DIR"
 cd "$CERT_DIR"
 
-echo "Generating CA..."
-
-openssl genrsa -out ca.key 4096
-
-openssl req \
-  -x509 \
-  -new \
-  -nodes \
-  -key ca.key \
-  -sha256 \
-  -days 3650 \
-  -out ca.crt \
-  -subj "/C=IT/ST=Lombardy/L=Milan/O=Local Dev/CN=Local Development CA"
+if [[ -f ca.crt && -f ca.key ]]; then
+  echo "Reusing existing CA."
+else
+  echo "Generating CA..."
+  openssl genrsa -out ca.key 4096
+  openssl req \
+    -x509 \
+    -new \
+    -nodes \
+    -key ca.key \
+    -sha256 \
+    -days 3650 \
+    -out ca.crt \
+    -subj "/C=IT/ST=Lombardy/L=Milan/O=Local Dev/CN=Local Development CA"
+fi
 
 echo "Generating $TYPE key..."
 
@@ -42,7 +44,7 @@ subjectAltName=@alt_names
 
 [alt_names]
 DNS.1=localhost
-IP.1=127.0.0.1
+IP.1=192.168.1.19
 IP.2=::1
 EOF
   CN="localhost"
