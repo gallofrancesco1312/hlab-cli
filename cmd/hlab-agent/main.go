@@ -10,5 +10,8 @@ import (
 
 func main() {
 	slog.Info("Starting hlab-agent...")
-	agent.NewServer(os.Args[1]).Start()
+	if err := agent.NewServer(os.Args[1]).Start(); err != nil {
+		slog.Error("Agent stopped", "error", err)
+		os.Exit(1)
+	}
 }

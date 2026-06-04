@@ -4,6 +4,7 @@ package agent_config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -40,7 +41,7 @@ type AgentTLSConfig struct {
 }
 
 func AgentDefaults(configFilename string) AgentConfig {
-	dir := HlabAgentDir(configFilename)
+	dir := HlabAgentConfigPath()
 	return AgentConfig{
 		NodeName: "hlab-node",
 		Port:     8443,
@@ -58,9 +59,9 @@ func AgentDefaults(configFilename string) AgentConfig {
 }
 
 // HlabDir returns the path to the ~/.hlab directory, creating it if it does not exist.
-func HlabAgentDir(configFilename string) string {
-	return filepath.Join(".", configFilename)
-	//return filepath.Join("/etc/hlab", configFilename)
+func HlabAgentConfigPath() string {
+	//return filepath.Join(".", configFilename)
+	return filepath.Join("/etc/hlab")
 }
 
 // Load reads the configuration from disk. If the file does not exist it returns the defaults.
@@ -68,20 +69,22 @@ func HlabAgentDir(configFilename string) string {
 func AgentLoad(configFilename string) (AgentConfig, error) {
 	cfg := AgentDefaults(configFilename)
 
-	path := HlabAgentDir(configFilename)
-	data, err := os.ReadFile(path)
+	path := HlabAgentConfigPath()
+	slog.Info("Configuration path at:", "config_path", filepath.Join(path, configFilename))
+
+	data, err := os.ReadFile(filepath.Join(path, configFilename))
 	if os.IsNotExist(err) {
 		// File does not exist yet: that's fine, use the defaults.
 		return cfg, nil
 	}
 	if err != nil {
-		return cfg, fmt.Errorf("reading config %s: %w", path, err)
+		return cfg, fmt.Errorf("reading config %s: %w", filepath.Join(path, configFilename), err)
 	}
 
 	// yaml.Unmarshal populates the struct fields from the YAML.
 	// We pass &cfg (pointer) because Unmarshal needs to modify the value.
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return cfg, fmt.Errorf("parsing config %s: %w", path, err)
+		return cfg, fmt.Errorf("parsing config %s: %w", filepath.Join(path, configFilename), err)
 	}
 
 	return cfg, nil
