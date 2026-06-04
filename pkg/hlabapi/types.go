@@ -5,8 +5,6 @@ package hlabapi
 
 import (
 	"time"
-
-	"github.com/moby/moby/api/types/container"
 )
 
 // ServiceType indicates which backend manages a service.
@@ -18,12 +16,22 @@ const (
 	ServiceTypeSystemd ServiceType = "systemd"
 )
 
+type ServiceStatus string
+
+const (
+	ServiceStatusRunning ServiceStatus = "running"
+	ServiceStatusExited  ServiceStatus = "exited"
+	ServiceStatusPaused  ServiceStatus = "paused"
+	ServiceStatusUnknown ServiceStatus = "unknown"
+)
+
 // Service describes a single service managed by the agent.
 type Service struct {
-	Name   string                   `json:"name"`
-	Type   ServiceType              `json:"type"`
-	Status container.ContainerState `json:"status"`
-	Uptime string                   `json:"uptime,omitempty"`
+	Name   string        `json:"name"`
+	Id     string        `json:"id"`
+	Type   ServiceType   `json:"type"`
+	Status ServiceStatus `json:"status"`
+	Uptime string        `json:"uptime,omitempty"`
 }
 
 // ServicesResponse is the response from the GET /services endpoint.

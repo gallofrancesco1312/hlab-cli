@@ -24,7 +24,6 @@ func setupDockerClient() (*DockerClient, error) {
 	if err != nil {
 		panic(err)
 	}
-	defer apiClient.Close()
 	return &DockerClient{client: apiClient, ctx: ctx}, nil
 }
 
@@ -74,7 +73,7 @@ func (s *Server) registerRoutes() {
 	s.Mux.HandleFunc("/health", s.handleHealth)
 	s.Mux.HandleFunc("GET /services", s.handleServices)
 	s.Mux.HandleFunc("POST /services/{name}/start", s.handleStartService)
-	//s.Mux.HandleFunc("POST /services/{name}/stop", s.handleStopService)
+	s.Mux.HandleFunc("POST /services/{name}/stop", s.handleStopService)
 }
 
 func (s *Server) Start() error {
