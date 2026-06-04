@@ -14,6 +14,12 @@ import (
 	"github.com/gallofrancesco1312/hlab-cli/pkg/hlabapi"
 )
 
+// NodeRef is a statically configured node address in config.yaml.
+type NodeRef struct {
+	Addr string `yaml:"addr"`
+	Port int    `yaml:"port"`
+}
+
 // Config is the CLI configuration structure (~/.hlab/config.yaml).
 // The `yaml:"..."` tags tell the parser how to map YAML keys to Go fields.
 type Config struct {
@@ -26,6 +32,9 @@ type Config struct {
 
 	// TLS holds the paths to client certificates.
 	TLS TLSConfig `yaml:"tls"`
+
+	// Nodes is the list of statically configured agent addresses to probe on discover.
+	Nodes []NodeRef `yaml:"nodes"`
 }
 
 // TLSConfig groups the paths to client TLS files.

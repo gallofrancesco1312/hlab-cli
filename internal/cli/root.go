@@ -42,7 +42,9 @@ in your homelab from any machine on the local network.
 Examples:
   hlab discover              # discover nodes on the LAN
   hlab nodes                 # list known nodes
-  hlab nas jellyfin stop     # stop jellyfin on node "nas"
+  hlab services nas          # list services on node "nas"
+  hlab start nas jellyfin    # start jellyfin on node "nas"
+  hlab stop nas jellyfin     # stop jellyfin on node "nas"
   hlab pki init              # generate mTLS certificates`,
 
 		// SilenceUsage prevents cobra from printing the full usage on every error.
@@ -65,6 +67,9 @@ Examples:
 	root.AddCommand(
 		newDiscoverCommand(),
 		newNodesCommand(),
+		newServicesCommand(),
+		newStartCommand(),
+		newStopCommand(),
 		newPKICommand(),
 		newConfigCommand(),
 	)

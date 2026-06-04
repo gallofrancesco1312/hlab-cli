@@ -47,14 +47,6 @@ type HealthResponse struct {
 	OK      bool   `json:"ok"`
 }
 
-// BeaconPayload is the UDP payload sent by the agent via multicast.
-type BeaconPayload struct {
-	Node    string `json:"node"`
-	Addr    string `json:"addr"`
-	Port    int    `json:"port"`
-	Version string `json:"version"`
-}
-
 // NodeEntry is how a node is stored in the local cache (~/.hlab/nodes.json).
 type NodeEntry struct {
 	Node     string    `json:"node"`

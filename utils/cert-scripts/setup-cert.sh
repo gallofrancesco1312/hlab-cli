@@ -2,8 +2,16 @@
 
 set -e
 
-mkdir -p certs
-cd certs
+TYPE="${1:-}"
+CERT_DIR="${2:-./certs}"
+
+if [[ "$TYPE" != "server" && "$TYPE" != "client" ]]; then
+  echo "Usage: $0 <server|client> [cert-dir]"
+  exit 1
+fi
+
+mkdir -p "$CERT_DIR"
+cd "$CERT_DIR"
 
 echo "Generating CA..."
 
@@ -19,11 +27,12 @@ openssl req \
   -out ca.crt \
   -subj "/C=IT/ST=Lombardy/L=Milan/O=Local Dev/CN=Local Development CA"
 
-echo "Generating server key..."
+echo "Generating $TYPE key..."
 
-openssl genrsa -out server.key 2048
+openssl genrsa -out "$TYPE.key" 2048
 
-cat > server.ext <<EOF
+if [[ "$TYPE" == "server" ]]; then
+  cat > "$TYPE.ext" <<EOF
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
 keyUsage=digitalSignature,keyEncipherment
@@ -36,38 +45,47 @@ DNS.1=localhost
 IP.1=127.0.0.1
 IP.2=::1
 EOF
+  CN="localhost"
+else
+  cat > "$TYPE.ext" <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage=digitalSignature,keyEncipherment
+extendedKeyUsage=clientAuth
+EOF
+  CN="test-client"
+fi
 
 echo "Generating CSR..."
 
 openssl req \
   -new \
-  -key server.key \
-  -out server.csr \
-  -subj "/C=IT/ST=Lombardy/L=Milan/O=Local Dev/CN=localhost"
+  -key "$TYPE.key" \
+  -out "$TYPE.csr" \
+  -subj "/C=IT/ST=Lombardy/L=Milan/O=Local Dev/CN=$CN"
 
 echo "Signing certificate..."
 
 openssl x509 \
   -req \
-  -in server.csr \
+  -in "$TYPE.csr" \
   -CA ca.crt \
   -CAkey ca.key \
   -CAcreateserial \
-  -out server.crt \
+  -out "$TYPE.crt" \
   -days 825 \
   -sha256 \
-  -extfile server.ext
+  -extfile "$TYPE.ext"
+
+rm -f "$TYPE.csr" "$TYPE.ext"
 
 echo
 echo "Verifying..."
-
-openssl verify -CAfile ca.crt server.crt
+openssl verify -CAfile ca.crt "$TYPE.crt"
 
 echo
 echo "Done."
 echo
-echo "Files created:"
-echo "  certs/ca.crt"
-echo "  certs/ca.key"
-echo "  certs/server.crt"
-echo "  certs/server.key"
+echo "Files created in $CERT_DIR:"
+echo "  ca.crt  ca.key"
+echo "  $TYPE.crt  $TYPE.key"

@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"text/tabwriter"
 	"time"
@@ -14,45 +15,35 @@ import (
 )
 
 func newDiscoverCommand() *cobra.Command {
-	var timeout time.Duration
-
 	cmd := &cobra.Command{
 		Use:   "discover",
-		Short: "Discover hlab nodes on the LAN via multicast",
-		Long: `Listens for UDP multicast traffic for the specified duration
-and saves found nodes to the local cache (~/.hlab/nodes.json).`,
-
-		// RunE is the variant of Run that can return an error.
-		// Prefer RunE over Run because cobra handles the error automatically
-		// (prints it and sets the exit code).
+		Short: "Probe configured nodes and update the local cache",
+		Long: `Contacts each node listed under 'nodes:' in ~/.hlab/config.yaml,
+calls GET /health, and saves results to ~/.hlab/nodes.json.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDiscover(timeout)
+			return runDiscover()
 		},
 	}
-
-	// Local flag: available only on this command, not on subcommands.
-	cmd.Flags().DurationVar(&timeout, "timeout", 3*time.Second, "multicast listen duration")
-
 	return cmd
 }
 
-func runDiscover(timeout time.Duration) error {
-	fmt.Fprintf(os.Stderr, "Listening for multicast beacons for %s...\n", timeout)
+func runDiscover() error {
+	cfg := loadConfig()
 
-	// TODO Phase 4: call the real multicast listener.
-	// For now we simulate with a sample node to test the output.
-	found := []hlabapi.NodeEntry{
-		{
-			Node:     "homelab-nas",
-			Addr:     "192.168.1.50",
-			Port:     8443,
-			Version:  "0.1.0",
-			LastSeen: time.Now(),
-			Stale:    false,
-		},
+	if len(cfg.Nodes) == 0 {
+		return fmt.Errorf("no nodes configured — add entries under 'nodes:' in ~/.hlab/config.yaml")
 	}
 
-	// Update the on-disk cache before printing.
+	client, err := newHTTPClient(cfg)
+	if err != nil {
+		return fmt.Errorf("building HTTP client: %w", err)
+	}
+
+	found, err := probeNodes(cfg.Nodes, client)
+	if err != nil {
+		return err
+	}
+
 	existing, err := config.LoadNodes()
 	if err != nil {
 		return fmt.Errorf("loading node cache: %w", err)
@@ -65,6 +56,35 @@ func runDiscover(timeout time.Duration) error {
 	}
 
 	return printNodes(found, globalFlags.output)
+}
+
+func probeNodes(refs []config.NodeRef, client *http.Client) ([]hlabapi.NodeEntry, error) {
+	var entries []hlabapi.NodeEntry
+	for _, ref := range refs {
+		url := fmt.Sprintf("https://%s:%d/health", ref.Addr, ref.Port)
+		resp, err := client.Get(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: %s:%d unreachable: %v\n", ref.Addr, ref.Port, err)
+			continue
+		}
+
+		var h hlabapi.HealthResponse
+		decodeErr := json.NewDecoder(resp.Body).Decode(&h)
+		resp.Body.Close()
+		if decodeErr != nil {
+			fmt.Fprintf(os.Stderr, "warn: %s:%d bad response: %v\n", ref.Addr, ref.Port, decodeErr)
+			continue
+		}
+
+		entries = append(entries, hlabapi.NodeEntry{
+			Node:     h.Node,
+			Addr:     ref.Addr,
+			Port:     ref.Port,
+			Version:  h.Version,
+			LastSeen: time.Now(),
+		})
+	}
+	return entries, nil
 }
 
 func newNodesCommand() *cobra.Command {
@@ -85,7 +105,7 @@ func newNodesCommand() *cobra.Command {
 
 func runNodes(refresh bool) error {
 	if refresh {
-		if err := runDiscover(3 * time.Second); err != nil {
+		if err := runDiscover(); err != nil {
 			return err
 		}
 	}
@@ -102,9 +122,6 @@ func runNodes(refresh bool) error {
 	return printNodes(nodes, globalFlags.output)
 }
 
-// printNodes prints nodes in the requested format.
-// Separating output logic from business logic is good practice:
-// it makes it easy to add new formats (json, csv) without touching the logic.
 func printNodes(nodes []hlabapi.NodeEntry, format outputFormat) error {
 	if format == outputJSON {
 		return json.NewEncoder(os.Stdout).Encode(nodes)
@@ -115,8 +132,6 @@ func printNodes(nodes []hlabapi.NodeEntry, format outputFormat) error {
 		return nil
 	}
 
-	// tabwriter aligns columns automatically.
-	// Parameters: output, minwidth, tabwidth, padding, padchar, flags.
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "NODE\tADDR\tPORT\tVERSION\tLAST SEEN\tSTALE")
 	fmt.Fprintln(w, "----\t----\t----\t-------\t---------\t-----")

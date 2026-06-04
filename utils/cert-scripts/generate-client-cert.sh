@@ -2,7 +2,7 @@
 
 set -e
 
-CERT_DIR="certs"
+CERT_DIR="~/.hlab"
 
 if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -f "$CERT_DIR/ca.key" ]; then
     echo "ERROR: $CERT_DIR/ca.crt o $CERT_DIR/ca.key non trovati"

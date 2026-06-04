@@ -67,7 +67,6 @@ func NewServer(configFile string) *Server {
 			KeyFile:  cfg.TLS.ClientKey,
 			CAFile:   cfg.TLS.CACert,
 		},
-		BeaconCfg:    cfg.Beacon,
 		Mux:          http.NewServeMux(),
 		DockerClient: dockerClient,
 	}
@@ -108,14 +107,6 @@ func (s *Server) Start() error {
 		Addr:      fmt.Sprintf(":%d", s.Port),
 		Handler:   s.Mux,
 		TLSConfig: tlsCfg,
-	}
-
-	if s.BeaconCfg.Enabled {
-		beacon, err := NewBeacon(s.BeaconCfg, s.NodeName, s.Port, s.Version)
-		if err != nil {
-			return fmt.Errorf("creating beacon: %w", err)
-		}
-		go beacon.Start(ctx)
 	}
 
 	errCh := make(chan error, 1)
