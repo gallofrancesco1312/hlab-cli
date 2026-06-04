@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gallofrancesco1312/hlab-cli/internal/agent_config"
 	"github.com/moby/moby/client"
@@ -38,6 +40,7 @@ type Server struct {
 	Version      string
 	Port         int
 	TLS          TLSConfig
+	BeaconCfg    agent_config.BeaconConfig
 	Mux          *http.ServeMux
 	DockerClient *DockerClient
 }
@@ -64,6 +67,7 @@ func NewServer(configFile string) *Server {
 			KeyFile:  cfg.TLS.ClientKey,
 			CAFile:   cfg.TLS.CACert,
 		},
+		BeaconCfg:    cfg.Beacon,
 		Mux:          http.NewServeMux(),
 		DockerClient: dockerClient,
 	}
@@ -81,8 +85,13 @@ func (s *Server) Start() error {
 	if s.TLS.CertFile == "" || s.TLS.KeyFile == "" {
 		return fmt.Errorf("TLS certificate and key files must be provided")
 	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	slog.Info("Registering HTTP routes...")
 	s.registerRoutes()
+
 	caCert, err := os.ReadFile(s.TLS.CAFile)
 	if err != nil {
 		return fmt.Errorf("failed to read CA certificate: %w", err)
@@ -95,12 +104,31 @@ func (s *Server) Start() error {
 		ClientCAs:  pool,
 	}
 
-	addr := fmt.Sprintf(":%d", s.Port)
-	server := http.Server{
-		Addr:      addr,
+	httpServer := &http.Server{
+		Addr:      fmt.Sprintf(":%d", s.Port),
 		Handler:   s.Mux,
 		TLSConfig: tlsCfg,
 	}
-	slog.Info("Agent server is listening on port", "port", s.Port)
-	return server.ListenAndServeTLS(s.TLS.CertFile, s.TLS.KeyFile)
+
+	if s.BeaconCfg.Enabled {
+		beacon, err := NewBeacon(s.BeaconCfg, s.NodeName, s.Port, s.Version)
+		if err != nil {
+			return fmt.Errorf("creating beacon: %w", err)
+		}
+		go beacon.Start(ctx)
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		slog.Info("Agent server is listening", "port", s.Port)
+		errCh <- httpServer.ListenAndServeTLS(s.TLS.CertFile, s.TLS.KeyFile)
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		slog.Info("Shutdown signal received, stopping server...")
+		return httpServer.Shutdown(context.Background())
+	}
 }

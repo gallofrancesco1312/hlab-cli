@@ -6,9 +6,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+// BeaconConfig controls multicast beacon broadcasting.
+type BeaconConfig struct {
+	Enabled       bool          `yaml:"enabled"`
+	Interval      time.Duration `yaml:"interval"`
+	MulticastAddr string        `yaml:"multicast_addr"`
+}
 
 // AgentConfig is the agent configuration structure (~/.hlab/config.yaml).
 // The `yaml:"..."` tags tell the parser how to map YAML keys to Go fields.
@@ -19,6 +27,9 @@ type AgentConfig struct {
 
 	// TLS holds the paths to client certificates.
 	TLS AgentTLSConfig `yaml:"tls"`
+
+	// Beacon controls multicast beacon broadcasting.
+	Beacon BeaconConfig `yaml:"beacon"`
 }
 
 // TLSConfig groups the paths to client TLS files.
@@ -37,6 +48,11 @@ func AgentDefaults(configFilename string) AgentConfig {
 			CACert:     filepath.Join(dir, "ca.crt"),
 			ClientCert: filepath.Join(dir, "server.crt"),
 			ClientKey:  filepath.Join(dir, "server.key"),
+		},
+		Beacon: BeaconConfig{
+			Enabled:       false,
+			Interval:      10 * time.Second,
+			MulticastAddr: "239.255.42.42:9999",
 		},
 	}
 }
